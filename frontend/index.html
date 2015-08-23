@@ -1,8 +1,100 @@
 <!DOCTYPE>
 <html>
     <head>
+
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.4/jquery.min.js"></script>
+       <!-- Latest compiled and minified CSS -->
+       <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap.min.css">
+
+       <!-- Optional theme -->
+       <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/css/bootstrap-theme.min.css">
+
+       <!-- Latest compiled and minified JavaScript -->
+       <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.5/js/bootstrap.min.js"></script>
+
+        <script src="http://cdnjs.cloudflare.com/ajax/libs/socket.io/1.3.6/socket.io.min.js"></script>
+
+        <script>    
+            var socket = io.connect('http://hearsay.thenoobprogrammer.com:3000'); 
+            socket.on('tweet', function(tweet){
+                var tweets = document.getElementById("tweets");
+
+                //check for a url
+                var hasUrl = false;
+                var urlRegExp =  new RegExp("([a-zA-Z0-9]+://)?([a-zA-Z0-9_]+:[a-zA-Z0-9_]+@)?([a-zA-Z0-9.-]+\\.[A-Za-z]{2,4})(:[0-9]+)?(/.*)?");
+                if(urlRegExp.test(tweet.text)){
+                    hasUrl = {}; 
+                    hasUrl.urlObject = urlRegExp.exec(tweet.text);
+                    hasUrl.url = hasUrl.urlObject[0].split(" ")[0];
+                    hasUrl.indexOfUrl = hasUrl.urlObject.index;
+                }
+
+
+                
+                console.log(tweet);
+                //create tweet box
+                var tweetElement = document.createElement('DIV');
+                var tweetText = document.createElement('H1');
+                var tweetAuthor = document.createElement('H2'); 
+                var tweet_author = document.createTextNode("By: " + tweet.user.name);
+                var tweetImg = document.createElement('IMG'); 
+                var tweetVideo = document.createElement('VIDEO');
+    
+                var tweetHasImg = false;
+                var tweetHasVideo = false;
+
+                //check for urls
+                var tweet_text; 
+                if(hasUrl){
+                    tweet_text_pre_url = document.createTextNode(tweet.text.substring(0, hasUrl.indexOfUrl));
+                    tweetUrl = document.createElement('A');
+                    tweetUrl_text = document.createTextNode(hasUrl.url);
+                    tweetUrl.href = hasUrl.url;
+                    tweet_text_post_url = document.createTextNode(tweet.text.substring(hasUrl.indexOfUrl + hasUrl.url.length, tweet.text.length));
+                    tweetUrl.appendChild(tweetUrl_text);
+                    tweetText.appendChild(tweet_text_pre_url);
+                    tweetText.appendChild(tweetUrl);
+                    tweetText.appendChild(tweet_text_post_url);
+                }
+                else{
+                    tweet_text = document.createTextNode(tweet.text); 
+                    tweetText.appendChild(tweet_text);
+                }
+
+
+                if(tweet.extended_entities && tweet.extended_entities.media[0].type == "photo"){
+                    tweetHasImg = true; 
+                    tweetImg.src = tweet.extended_entities.media[0].media_url;
+                    tweetImg.alt = "failed to load image..";
+                }
+
+                if(tweet.extended_entities && tweet.extended_entities.media[0].type == "animated_gif"){
+                    tweetHasVideo = true; 
+                    var source = document.createElement('SOURCE'); 
+                    source.src = tweet.extended_entities.media[0].video_info.variants[0].url;
+                    var autoplay = document.createAttribute('autoplay');
+                    var loop = document.createAttribute('loop');
+                    tweetVideo.setAttributeNode(autoplay);
+                    tweetVideo.setAttributeNode(loop);
+                    tweetVideo.appendChild(source);
+                }
+            
+                //add styles
+
+                tweetAuthor.appendChild(tweet_author);
+                tweetElement.appendChild(tweetText); 
+                if(tweetHasImg) tweetElement.appendChild(tweetImg);
+                if(tweetHasVideo) tweetElement.appendChild(tweetVideo);
+                tweetElement.appendChild(tweetAuthor);
+                tweets.insertBefore(tweetElement, tweets.firstChild);
+            });
+        </script>
     </head>
     <body>
-        <h1>Hello World</h1>
+        <div class="jumbotron" style="text-align:center; height: 100%;">
+            <div id="tweets" class="container">
+                <div></div> 
+            </div>
+        </div>
     </body>
 </html>

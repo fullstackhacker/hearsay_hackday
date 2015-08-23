@@ -1,46 +1,21 @@
-var express = require('express');
-var path = require('path');
-var logger = require('morgan');
-var cookieParser = require('cookie-parser');
-var bodyParser = require('body-parser');
+var io = require('socket.io').listen(3000);
+var twitter = require('./config/twitter');
+var app = {sockets: []};
 
-var app = express();
-
-app.use(logger('dev'));
-app.use(bodyParser.json());
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(cookieParser());
-
-var routes = require('./routes/');
-app.use('/', routes);
-
-// catch 404 and forward to error handler
-app.use(function(req, res, next) {
-  var err = new Error('Not Found');
-  err.status = 404;
-  next(err);
+io.sockets.on('connection', function(socket){
+    console.log("Got a connection...");
+    app.sockets.push(socket);
 });
 
-// error handlers
+twitter.stream('statuses/filter', { track: 'hearsayhackday, hshackday, hearsayhackday, hearsay hackday, hearsay hack day, @hearsayhackday' }, function(stream){
+    stream.on('data', function(tweet){
+        console.log(tweet.text);
+        if(app.sockets.length > 0){
+            io.emit('tweet', tweet);
+        }
+    });
 
-// development error handler
-// will print stacktrace
-if (app.get('env') === 'development') {
-  app.use(function(err, req, res, next) {
-    res.status(err.status || 500).json({'error': {
-      message: err.message,
-      error: err
-    }});
-  });
-}
-
-// production error handler
-// no stacktraces leaked to user
-app.use(function(err, req, res, next) {
-  res.status(err.status || 500).json({'error': {
-    message: err.message,
-    error: {}
-  }});
+    stream.on('error', function(error){
+        console.log(error); 
+    });
 });
-
-module.exports = app;
